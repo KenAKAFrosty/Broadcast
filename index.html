@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<script name="Messages constant">
+    const message = {
+        "Hi button click": "Hi button click",
+        "Global state changed": "Global state changed"
+    }
+
+    let globalState = {
+        data: "hi",
+        moreData: "yo"
+    }
+</script>
+
+<body>
+    <button onclick="return ()=> broadcast(message['Hi button click'])">Hi</button>
+
+
+    <div name="Main Heading">
+        <h1>header</h1>
+
+        <p onclick='return (thisElement, event) => { 
+            console.log(globalState);
+            globalState.data = "goodbye"
+            broadcast(message["Global state changed"])
+            console.log(globalState)
+        }' onload='return (thisElement)=>{
+            thisElement.textContent = "After loading"
+            subscribe(message["Global state changed"], async ()=> {
+                thisElement.textContent = globalState.data
+            })
+        }'>
+            Content
+        </p>
+
+    </div>
+
+    </div>
+</body>
+
+
+<script name="Simple">
+    function broadcast(message) {
+        window.postMessage(message)
+    }
+
+    function subscribe(message, handler) {
+        window.addEventListener('message', (messageEvent) => {
+            if (messageEvent.source !== window || messageEvent.data !== message) return;
+            handler(messageEvent);
+        })
+    }
+
+    function unsubscribe(message, handler) {
+        window.removeEventListener('message', handler)
+    }
+    Array.from(document.querySelectorAll('[onload]')).forEach((element) => element.onload()(element));
+
+    Array.from(document.querySelectorAll('[onclick]')).forEach((element) => {
+        element.addEventListener('click', (event) => {
+            element.onclick()(element, event)
+        })
+    })
+</script>
+
+
+</html>
