@@ -8,38 +8,56 @@
     <title>Document</title>
 </head>
 
-<script name="Messages constant">
+<script name="Setup">
     const message = {
         "Hi button click": "Hi button click",
-        "Global state changed": "Global state changed"
+        "stateChange": "stateChange"
     }
 
-    let globalState = {
+    let state = {
         data: "hi",
-        moreData: "yo"
+        moreData: "yo",
+        nested: {
+            data: "am I getting updated?"
+        },
+        deep: {
+            as: {
+                fuck: "Damn you did it"
+            }
+        }
     }
+    window.state = state
+
+
 </script>
 
+
 <body>
-    <button onclick="return ()=> broadcast(message['Hi button click'])">Hi</button>
+    <button onclick="return ()=> broadcast(message[`Hi button click`])">
+        Hi
+    </button>
 
 
     <div name="Main Heading">
-        <h1>header</h1>
 
-        <p onclick='return (thisElement, event) => { 
-            console.log(globalState);
-            globalState.data = "goodbye"
-            broadcast(message["Global state changed"])
-            console.log(globalState)
-        }' onload='return (thisElement)=>{
-            thisElement.textContent = "After loading"
-            subscribe(message["Global state changed"], async ()=> {
-                thisElement.textContent = globalState.data
-            })
-        }'>
+        <h1 onload="return(thisElement)=> { 
+                thisElement.textContent = `Header`
+            }">
+            header
+        </h1>
+
+        <p onclick='return(thisElement, event) => {  
+                state.deep.as = `lets fuckin go boys`
+            }' 
+            
+            onload='return (thisElement)=>{
+                thisElement.textContent = state.nested.data
+                subscribe(message[`stateChange`], ()=>  thisElement.textContent = state.deep.as );
+                subscribe(message[`Hi button click`], ()=> thisElement.textContent = `hey` )
+            }'>
             Content
         </p>
+
 
     </div>
 
@@ -47,8 +65,10 @@
 </body>
 
 
+
 <script name="Simple">
     function broadcast(message) {
+        console.log("Broadcasting", message)
         window.postMessage(message)
     }
 
@@ -62,13 +82,46 @@
     function unsubscribe(message, handler) {
         window.removeEventListener('message', handler)
     }
-    Array.from(document.querySelectorAll('[onload]')).forEach((element) => element.onload()(element));
 
-    Array.from(document.querySelectorAll('[onclick]')).forEach((element) => {
-        element.addEventListener('click', (event) => {
-            element.onclick()(element, event)
-        })
+    window._state = state;
+    Object.defineProperty(window, "state", {
+        set(value) {
+            window._state = value;
+            broadcast(message["stateChange"])
+        },
+        get() {
+            return window._state
+        }
     })
+
+    function broadcastAllChanges(obj) {
+        for (const key in obj) {
+
+            obj["_" + key] = obj[key];
+            Object.defineProperty(obj, key, {
+                set(value) {
+                    const staleValue = obj["_" + key]
+                    obj["_" + key] = value;
+                    if (staleValue !== value) broadcast(message["stateChange"])
+                },
+                get() {
+                    return obj["_" + key]
+                }
+            })
+            if (typeof obj[key] === "object") broadcastAllChanges(obj[key])
+        }
+    }
+
+    broadcastAllChanges(state)
+    document.querySelectorAll('[onload]').forEach((element) => element.onload()(element));
+    const events = ["click", "mousedown", "mouseup", "keypress", "mouseover"]
+    for (const eventName of events) {
+        document.querySelectorAll(`[on${eventName}]`).forEach(element => {
+            element.addEventListener(eventName, event => {
+                element[`on${eventName}`]()(element, event)
+            })
+        })
+    }
 </script>
 
 
