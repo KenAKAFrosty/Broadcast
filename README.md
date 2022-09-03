@@ -1,1 +1,1 @@
-# And so it begins.
+# A simple, tiny package for broadcasting messages that any other component can subscribe to
